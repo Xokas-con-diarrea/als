@@ -1,0 +1,74 @@
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local GuiService = game:GetService("GuiService")
+local VirtualInput = game:GetService("VirtualInputManager")
+local httpService = game:GetService("HttpService")
+local HttpRequest = http_request or request
+local Headers = {["content-type"] = "application/json"}
+
+local function NavigationGUISelect(Object)
+    if not Object then return end
+    local success = pcall(function()
+        GuiService.GuiNavigationEnabled = true
+        GuiService.SelectedObject = Object
+        repeat task.wait() until GuiService.SelectedObject == Object
+        VirtualInput:SendKeyEvent(true, "Return", false, nil)
+        VirtualInput:SendKeyEvent(false, "Return", false, nil)
+        task.wait(0.15)
+        GuiService.GuiNavigationEnabled = false
+        GuiService.SelectedObject = nil
+    end)
+    if not success then
+        warn("[Navigation] Failed to select object")
+    end
+end
+
+while task.wait(0.2) do
+    local traitMatched = false
+
+    local success, err = pcall(function()
+        local gui = LocalPlayer:FindFirstChild("PlayerGui")
+        if not gui then return end
+
+        local quirksUI = gui:FindFirstChild("QuirksUI")
+        if not quirksUI then return end
+
+        local rerolls = LocalPlayer:FindFirstChild("Rerolls") and LocalPlayer.Rerolls.Value or "?"
+        local rollButton = quirksUI.BG.Bottom:FindFirstChild("Reroll")
+        local resultLabel = quirksUI.BG.Content.Technique:FindFirstChild("Title")
+        local unitName = game:GetService("Players").LocalPlayer.PlayerGui.QuirksUI.BG.Content.Selection.Select.TextButton.Frame.UnitName.Text
+
+        if resultLabel and resultLabel.Text == getgenv().Trait then
+            local FBody = httpService:JSONEncode({
+                ["content"] = "<@"..getgenv().UserID.."> Trait Obtained!",
+                ["embeds"] = {{
+                    ["title"] = "Makoto Hub v2 accelerator",
+                    ["type"] = "rich",
+                    ["color"] = tonumber(0xffffff),
+                    ["thumbnail"] = {
+                        ["url"] = "https://media.discordapp.net/attachments/1308174481793093735/1316079547195588678/image.png"
+                    },
+                    ["fields"] = {
+                        {["name"] = "Unit Rerolled", ["value"] = unitName, ["inline"] = true},
+                        {["name"] = "Trait Obtained", ["value"] = getgenv().Trait, ["inline"] = false},
+                        {["name"] = "RR Left", ["value"] = rerolls, ["inline"] = true},
+                    }
+                }}
+            })
+
+            HttpRequest({Url = getgenv().Webhook, Body = FBody, Method = "POST", Headers = Headers})
+            traitMatched = true
+        else
+            NavigationGUISelect(rollButton)
+        end
+    end)
+
+    if not success then
+        warn("Error in reroll loop:", err)
+    end
+
+    if traitMatched then
+        break
+    end
+end
