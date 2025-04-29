@@ -1,6 +1,4 @@
 
-
-
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local GuiService = game:GetService("GuiService")
@@ -27,29 +25,32 @@ local function NavigationGUISelect(Object)
 end
 
 while task.wait(0.4) do
+    local foundMatch = false
+
     local success, err = pcall(function()
         local gui = LocalPlayer:FindFirstChild("PlayerGui")
         local enchanting = gui and gui:FindFirstChild("Enchanting")
         local frame = enchanting and enchanting:FindFirstChild("Frame")
-        local pearls = frame:GetChildren()[3] and frame:GetChildren()[3]:GetChildren()[4].TextLabel.Text or "?"
         if not frame then return end
 
-        local rollButton = frame:GetChildren()[3] and frame:GetChildren()[3]:GetChildren()[2] and frame:GetChildren()[3]:GetChildren()[2]:GetChildren()[3]
+        local pearls = frame:GetChildren()[3] and frame:GetChildren()[3]:GetChildren()[4].TextLabel.Text or "?"
 
+        local rollButton = frame:GetChildren()[3] and frame:GetChildren()[3]:GetChildren()[2] and frame:GetChildren()[3]:GetChildren()[2]:GetChildren()[3]
 
         local resultLabel = frame:GetChildren()[3] and frame:GetChildren()[3]:GetChildren()[7] and frame:GetChildren()[3]:GetChildren()[7]:GetChildren()[3].Frame.Frame.TextLabel
 
         if resultLabel and resultLabel.Text == getgenv().Enchantment then
             local unitName = frame:GetChildren()[4] and frame:GetChildren()[4].Frame.Frame.TextButton.Frame.UnitName.Text or "Unknown"
-            
 
             local FBody = httpService:JSONEncode({
                 ["content"] = "<@"..getgenv().UserID.."> Enchantment Obtained!",
-                ["embeds"] = {{
+                ["embeds"] = { {
                     ["title"] = "Makoto Hub v2 accelerator",
                     ["type"] = "rich",
                     ["color"] = tonumber(0xffffff),
-                    ["thumbnail"] = {["url"] = "https://media.discordapp.net/attachments/1308174481793093735/1316079547195588678/image.png?ex=6764f2d7&is=6763a157&hm=9055fa0a5bf94ed25f5cd734f2cc45dc1f3e4b6c0c8fbbb5c73d138974cdd4a6&=&format=webp&quality=lossless&width=1250&height=676"},
+                    ["thumbnail"] = {
+                        ["url"] = "https://media.discordapp.net/attachments/1308174481793093735/1316079547195588678/image.png"
+                    },
                     ["fields"] = {
                         {["name"] = "Unit Rerolled", ["value"] = unitName, ["inline"] = true},
                         {["name"] = "Enchantment Obtained", ["value"] = getgenv().Enchantment, ["inline"] = false},
@@ -59,13 +60,17 @@ while task.wait(0.4) do
             })
 
             HttpRequest({Url = getgenv().Webhook, Body = FBody, Method = "POST", Headers = Headers})
-            return
-            
+            foundMatch = true
+        else
+            NavigationGUISelect(rollButton)
         end
-                NavigationGUISelect(rollButton)
     end)
 
     if not success then
+        warn("Error during enchantment check:", err)
     end
-    break
+
+    if foundMatch then
+        break
+    end
 end
